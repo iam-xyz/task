@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TaskFlow – Personal Task Manager
 
 ## Stack
@@ -125,3 +126,6 @@ Never commit `.env` to Git.
 
 Task queries always include the authenticated user's ID. The frontend never chooses the owner ID.
 
+=======
+# task-manager
+>>>>>>> d988eafb3564c808d8ffeeea39e43c908bde5a30
