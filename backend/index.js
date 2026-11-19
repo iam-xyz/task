@@ -8,7 +8,7 @@ import taskRoutes from "./routes/task.routes.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
-const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+const clientUrl = process.env.CLIENT_URL || "https://tasks-flow-byprem.vercel.app";
 
 app.use(cors({
   origin: clientUrl,
