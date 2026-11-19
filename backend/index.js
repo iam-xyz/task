@@ -8,7 +8,7 @@ import taskRoutes from "./routes/task.routes.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
-const clientUrl = "https://taskm-backend-aoh5.onrender.com";
+const clientUrl = "https://tasks-flow-byprem.vercel.app/";
 
 app.use(cors({
   origin: clientUrl,
