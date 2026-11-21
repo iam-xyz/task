@@ -1,196 +1,91 @@
-import User from "../models/user.model.js";
-import bcrypt from "bcryptjs";
 
-// SIGNUP
+import bcrypt from "bcryptjs";
+import User from "../models/user.model.js";
+
+const publicUser = (user) => ({
+  id: user._id,
+  firstname: user.firstname,
+  lastname: user.lastname,
+  username: user.username,
+  email: user.email,
+});
+
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { firstname, lastname, username, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
+    if (![firstname, lastname, username, email, password].every(
+      (value) => typeof value === "string" && value.trim()
+    )) {
+      return res.status(400).json({ message: "Please complete all required fields." });
     }
 
+    if (password.length < 8) {
+      return res.status(400).json({ message: "Password must contain at least 8 characters." });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = username.trim().toLowerCase();
+
     const existingUser = await User.findOne({
-      email: email.toLowerCase(),
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
 
     if (existingUser) {
-      return res.status(409).json({
-        message: "User already exists",
-      });
+      const field = existingUser.email === normalizedEmail ? "email" : "username";
+      return res.status(409).json({ message: `An account with this ${field} already exists.` });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      firstname: firstname.trim(),
+      lastname: lastname.trim(),
+      username: normalizedUsername,
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
     return res.status(201).json({
-      message: "Signup successful",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      message: "Account created successfully.",
+      user: publicUser(user),
     });
   } catch (error) {
-    console.error(error);
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "Email or username is already in use." });
+    }
 
-    return res.status(500).json({
-      message: "Signup failed",
-    });
+    console.error("Signup error:", error.message);
+    return res.status(500).json({ message: "Unable to create your account right now." });
   }
 };
 
-// LOGIN
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({
-      email: email?.toLowerCase(),
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
+      return res.status(400).json({ message: "Email and password are required." });
     }
 
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select("+password");
 
-    if (!isPasswordCorrect) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
     return res.status(200).json({
-      message: "Login successful",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      message: "Logged in successfully.",
+      user: publicUser(user),
     });
   } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      message: "Login failed",
-    });
+    console.error("Login error:", error.message);
+    return res.status(500).json({ message: "Unable to log in right now." });
   }
 };
 
-// LOGOUT
 export const logout = (req, res) => {
   return res.status(200).json({
-    message: "Logout successful",
-  });
-};
-import User from "../models/user.model.js";
-import bcrypt from "bcryptjs";
-
-// SIGNUP
-export const signup = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
-    }
-
-    const existingUser = await User.findOne({
-      email: email.toLowerCase(),
-    });
-
-    if (existingUser) {
-      return res.status(409).json({
-        message: "User already exists",
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-    });
-
-    return res.status(201).json({
-      message: "Signup successful",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      message: "Signup failed",
-    });
-  }
-};
-
-// LOGIN
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const user = await User.findOne({
-      email: email?.toLowerCase(),
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
-    }
-
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!isPasswordCorrect) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-      });
-    }
-
-    return res.status(200).json({
-      message: "Login successful",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      message: "Login failed",
-    });
-  }
-};
-
-// LOGOUT
-export const logout = (req, res) => {
-  return res.status(200).json({
-    message: "Logout successful",
+    message: "Logged out successfully."
   });
 };
